@@ -1,2 +1,5 @@
 .ac_game_menu {
+    width: 100%;
+    heigh: 100%;
+    background-image: url("/static/image/menu/background.gif");
 }
