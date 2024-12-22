@@ -1,5 +1,4 @@
-class AcGameMenu
-{
+class AcGameMenu {
     constructor(root)
     {
         this.root = root;
@@ -7,6 +6,6 @@ class AcGameMenu
             <div class="ac-game-menu">
             </div>
         `);
-
+       this.root.$ac_game.append(this.$menu); 
     }
 }

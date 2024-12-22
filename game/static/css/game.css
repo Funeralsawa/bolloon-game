@@ -1,5 +1,7 @@
-.ac_game_menu {
+.ac-game-menu {
     width: 100%;
-    heigh: 100%;
-    background-image: url("/static/image/menu/background.gif");
-}
+    height: 100%;
+    background-color: red;
+    background-image: url("/static/image/menu/background.png");
+    background-size: 100% 100%;
+};
