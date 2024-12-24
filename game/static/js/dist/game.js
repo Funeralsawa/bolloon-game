@@ -276,7 +276,7 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.root = root;
         this.$playground = $(`<div class="ac-game-playground"></div>`)
 
-        //this.hide();
+        this.hide();
         this.root.$ac_game.append(this.$playground);
         this.width = this.$playground.width();
         this.height = this.$playground.height();
@@ -305,7 +305,7 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         console.log("create ac game");
         this.id = id;
         this.$ac_game = $('#' + this.id);
-        //this.menu = new AcGameMenu(this);
+        this.menu = new AcGameMenu(this);
         this.playground = new AcGamePlayground(this);
 
         this.start();
