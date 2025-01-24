@@ -6,6 +6,9 @@ class Player extends AcGameObject {
         this.y = y;
         this.vx = 0;
         this.vy = 0;
+        this.damage_x = 0;
+        this.damage_y = 0;
+        this.damage_speed = 0;
         this.move_length = 0;
         this.ctx = this.playground.game_map.ctx;
         this.radius = radius;
@@ -13,13 +16,18 @@ class Player extends AcGameObject {
         this.speed = speed;
         this.is_me = is_me;
         this.eps = 0.1; //小于0.1就算0
-
+        this.friction = 0.9;
         this.cur_skill = null;
     }
 
     start() {
         if(this.is_me) {
             this.add_listening_events();
+        }
+        else {
+            let tx = Math.random() * this.playground.width;
+            let ty = Math.random() * this.playground.height;
+            this.move_to(tx, ty);
         }
     }
 
@@ -62,9 +70,9 @@ class Player extends AcGameObject {
         let vy = Math.sin(angle);
         let color = "red";
         let speed = this.playground.height * 0.5;
-        let move_length = this.playground.height * 1.5;
+        let move_length = this.playground.height * 1;
         console.log(tx, ty);
-        new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length);
+        new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, this.playground.height * 0.01);
     }
 
     move_to(tx, ty) {
@@ -74,16 +82,41 @@ class Player extends AcGameObject {
         this.vy = Math.sin(angle);
     }
 
+    is_attacked(angle, damage) {
+        this.radius -= damage;
+        if(this.radius < 10) {
+            this.destroy();
+            return false;
+        }
+        this.damage_x = Math.cos(angle);
+        this.damage_y = Math.sin(angle);
+        this.damage_speed = damage * 100;
+        this.speed *= 1.5;
+    }
+
     update() {
-        if(this.move_length < this.eps) {
-            this.move_length = 0;
+        if(this.damage_speed > this.eps) {
             this.vx = this.vy = 0;
+            this.move_length = 0;
+            this.x += this.damage_x * this.damage_speed * this.timedelta / 1000;
+            this.y += this.damage_y * this.damage_speed * this.timedelta / 1000;
+            this.damage_speed *= this.friction;
         } else {
-            this.moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
-            this.x += this.vx * this.moved;
-            this.y += this.vy * this.moved;
-            this.move_length -= this.moved;
-            //console.log(this.x, this.y);
+            if(this.move_length < this.eps) {
+                this.move_length = 0;
+                this.vx = this.vy = 0;
+                if(!this.is_me) { //如果AI，那么不能停下来，继续移动
+                    let tx = Math.random() * this.playground.width;
+                    let ty = Math.random() * this.playground.height;
+                    this.move_to(tx, ty);
+                }
+            } else {
+                this.moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
+                this.x += this.vx * this.moved;
+                this.y += this.vy * this.moved;
+                this.move_length -= this.moved;
+                //console.log(this.x, this.y);
+            }
         }
         this.render();
     }
