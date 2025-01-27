@@ -17,7 +17,9 @@ class Player extends AcGameObject {
         this.is_me = is_me;
         this.eps = 0.1; //小于0.1就算0
         this.friction = 0.9;
+        this.spent_time = 0;
         this.cur_skill = null;
+        this.is_die = false;
     }
 
     start() {
@@ -41,7 +43,7 @@ class Player extends AcGameObject {
             if(e.which === 3) {
                 outer.move_to(e.clientX, e.clientY);
             }else if(e.which === 1) {
-                if(outer.cur_skill === "fireball") {
+                if(!outer.is_die && outer.cur_skill === "fireball") {
                     outer.shoot_fireball(e.clientX, e.clientY);
                 }
                 outer.cur_skill = null;
@@ -83,8 +85,22 @@ class Player extends AcGameObject {
     }
 
     is_attacked(angle, damage) {
+        //粒子效果
+        for(let i = 0; i < 20 + Math.random() * 5; i++) {
+            let x = this.x, y = this.y;
+            let radius = this.radius * Math.random() * 0.1;
+            let angle = Math.PI * 2 * Math.random();
+            let vx = Math.cos(angle);
+            let vy = Math.sin(angle);
+            let color = this.color;
+            let speed = this.speed * 10;
+            let move_length = this.radius * Math.random() * 10;
+            new Particle(this.playground, x, y, radius, vx, vy, color, speed, move_length);
+        }
+        //受伤效果
         this.radius -= damage;
         if(this.radius < 10) {
+            this.is_die = true;
             this.destroy();
             return false;
         }
@@ -95,6 +111,12 @@ class Player extends AcGameObject {
     }
 
     update() {
+        this.spent_time += this.timedelta / 1000;
+
+        if(this.spent_time > 3 && Math.random() < 1 / 300.0 && !this.is_me) {
+            let player = this.playground.players[0];  
+            this.shoot_fireball(player.x, player.y);
+        }
         if(this.damage_speed > this.eps) {
             this.vx = this.vy = 0;
             this.move_length = 0;
@@ -126,5 +148,14 @@ class Player extends AcGameObject {
         this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         this.ctx.fillStyle = this.color;
         this.ctx.fill();
+    }
+
+    on_destroy() {
+        for(let i = 0; i < this.playground.players.length; i++) {
+            if(this.playground.players[i] === this) {
+                this.playground.players.splice(i, 1);
+                break;
+            }
+        }
     }
 }

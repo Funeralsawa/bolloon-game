@@ -136,6 +136,47 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
         this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
+}class Particle extends AcGameObject {
+    constructor(playground, x, y, radius, vx, vy, color, speed, move_length) {
+        super();
+        this.playground = playground;
+        this.ctx = this.playground.game_map.ctx;
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = radius;
+        this.color = color;
+        this.speed = speed;
+        this.move_length = move_length
+        this.friction = 0.9;
+        this.eps = 1;
+    }
+
+    start() {
+
+    }
+
+    update() {
+        if(this.move_length < this.eps || this.speed < this.eps) {
+            this.destroy();
+            return false;
+        }
+        let moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
+        this.x += this.vx * moved;
+        this.y += this.vy * moved;
+        this.speed *= this.friction;
+        this.move_length -= moved;
+        this.render();
+    }
+
+    render() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+        this.ctx.fillStyle = this.color;
+        this.ctx.fill();
+        this.ctx.closePath();
+    }
 }class Player extends AcGameObject {
     constructor(playground, x, y, radius, color, speed, is_me) {
         super();
@@ -155,7 +196,9 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.is_me = is_me;
         this.eps = 0.1; //小于0.1就算0
         this.friction = 0.9;
+        this.spent_time = 0;
         this.cur_skill = null;
+        this.is_die = false;
     }
 
     start() {
@@ -179,7 +222,7 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
             if(e.which === 3) {
                 outer.move_to(e.clientX, e.clientY);
             }else if(e.which === 1) {
-                if(outer.cur_skill === "fireball") {
+                if(!outer.is_die && outer.cur_skill === "fireball") {
                     outer.shoot_fireball(e.clientX, e.clientY);
                 }
                 outer.cur_skill = null;
@@ -221,8 +264,22 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
     }
 
     is_attacked(angle, damage) {
+        //粒子效果
+        for(let i = 0; i < 20 + Math.random() * 5; i++) {
+            let x = this.x, y = this.y;
+            let radius = this.radius * Math.random() * 0.1;
+            let angle = Math.PI * 2 * Math.random();
+            let vx = Math.cos(angle);
+            let vy = Math.sin(angle);
+            let color = this.color;
+            let speed = this.speed * 10;
+            let move_length = this.radius * Math.random() * 10;
+            new Particle(this.playground, x, y, radius, vx, vy, color, speed, move_length);
+        }
+        //受伤效果
         this.radius -= damage;
         if(this.radius < 10) {
+            this.is_die = true;
             this.destroy();
             return false;
         }
@@ -233,6 +290,12 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
     }
 
     update() {
+        this.spent_time += this.timedelta / 1000;
+
+        if(this.spent_time > 3 && Math.random() < 1 / 300.0 && !this.is_me) {
+            let player = this.playground.players[0];  
+            this.shoot_fireball(player.x, player.y);
+        }
         if(this.damage_speed > this.eps) {
             this.vx = this.vy = 0;
             this.move_length = 0;
@@ -264,6 +327,15 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
         this.ctx.fillStyle = this.color;
         this.ctx.fill();
+    }
+
+    on_destroy() {
+        for(let i = 0; i < this.playground.players.length; i++) {
+            if(this.playground.players[i] === this) {
+                this.playground.players.splice(i, 1);
+                break;
+            }
+        }
     }
 }class FireBall extends AcGameObject {
     constructor(playground, player, x, y, radius, vx, vy, color, speed, move_length, damage) {
@@ -342,11 +414,16 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", 
             this.height * 0.15, true));
         for(let i = 0; i < 5; i++) {
-            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "blue", 
-                this.height * 0.15, false));
+            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, 
+                this.get_random_color(), this.height * 0.15, false));
             console.log("ssss");
         }
         this.start();
+    }
+
+    get_random_color() {
+        let colors = ["red", "green", "blue", "yellow", "purple", "orange", "pink"];
+        return colors[Math.floor(Math.random() * 5)];
     }
 
     start() {

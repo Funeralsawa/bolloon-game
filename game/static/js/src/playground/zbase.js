@@ -12,11 +12,16 @@ class AcGamePlayground {
         this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "white", 
             this.height * 0.15, true));
         for(let i = 0; i < 5; i++) {
-            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, "blue", 
-                this.height * 0.15, false));
+            this.players.push(new Player(this, this.width / 2, this.height / 2, this.height * 0.05, 
+                this.get_random_color(), this.height * 0.15, false));
             console.log("ssss");
         }
         this.start();
+    }
+
+    get_random_color() {
+        let colors = ["red", "green", "blue", "yellow", "purple", "orange", "pink"];
+        return colors[Math.floor(Math.random() * 5)];
     }
 
     start() {
