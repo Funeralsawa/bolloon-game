@@ -199,6 +199,7 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         this.spent_time = 0;
         this.cur_skill = null;
         this.is_die = false;
+        this.attacked_num = 0;
     }
 
     start() {
@@ -280,7 +281,8 @@ requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
         }
         //受伤效果
         this.radius -= damage;
-        if(this.radius < 10) {
+        this.attacked_num += 1;
+        if(this.attacked_num === 4) {
             this.is_die = true;
             this.destroy();
             return false;
