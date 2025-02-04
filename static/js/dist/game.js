@@ -555,6 +555,7 @@ class Settings {
 
         this.$login.hide();
         this.$register.hide();
+        this.$acwing_login = this.$settings.find('.ac-game-settings-acwing img')
         this.root.$ac_game.append(this.$settings);
         this.start();
     }
@@ -565,8 +566,27 @@ class Settings {
     }
 
     add_listening_events() {
+        let outer = this;
         this.add_listening_events_login();
         this.add_listening_events_register();
+
+        this.$acwing_login.click(function(){
+            outer.acwing_login();
+        });
+    }
+
+    acwing_login() {
+        console.log('click acwing login')
+        $.ajax({
+            url: "https://app6916.acapp.acwing.com.cn/settings/acwing/web/apply_code/",
+            type: "GET",
+            success: function(resp) {
+                console.log(resp);
+                if (resp.result === "success") {
+                    window.location.replace(resp.apply_code_url); // 重定向当前页面
+                }
+            },
+        });
     }
 
     add_listening_events_login() {
