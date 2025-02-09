@@ -38,11 +38,13 @@ class AcGameMenu {
         this.$single.click(function(){
             console.log('click single mode');
             outer.hide();
-            outer.root.playground.show();
+            outer.root.playground.show("single mode");
         });
 
         this.$multi.click(function(){
             console.log('click multi mode');
+            outer.hide();
+            outer.root.playground.show("multi mode");
         });
 
         this.$settings.click(function(){
@@ -68,6 +70,18 @@ class AcGameObject {
         AC_GAME_OBJECTS.push(this);
         this.has_called_start = false; //是否执行过start函数
         this.timedelta = 0; //当前距离上一帧的时间间隔 单位ms
+        this.uuid = this.create_uuid();
+
+        console.log(this.uuid);
+    }
+
+    create_uuid() {
+        let res = "";
+        for(let i = 0; i < 8; i++) {
+            let x = parseInt(Math.floor(Math.random() * 10));
+            res += x;
+        }
+        return res;
     }
 
     start() {
@@ -114,7 +128,8 @@ let AC_GAME_ANIMATION = function(timestamp) {
     requestAnimationFrame(AC_GAME_ANIMATION);
 }
 
-requestAnimationFrame(AC_GAME_ANIMATION);class GameMap extends AcGameObject {
+requestAnimationFrame(AC_GAME_ANIMATION);
+class GameMap extends AcGameObject {
     constructor(playground) {
         super();
         this.playground = playground;
@@ -190,7 +205,7 @@ class Particle extends AcGameObject {
     }
 }
 class Player extends AcGameObject {
-    constructor(playground, x, y, radius, color, speed, is_me) {
+    constructor(playground, x, y, radius, color, speed, character, username, photo) {
         super();
         this.playground = playground;
         this.x = x;
@@ -205,21 +220,23 @@ class Player extends AcGameObject {
         this.radius = radius;
         this.color = color;
         this.speed = speed;
-        this.is_me = is_me;
+        this.character = character;
+        this.username = username;
+        this.photo = photo;
         this.eps = 0.01; //小于0.01就算0
         this.friction = 0.9;
         this.spent_time = 0;
         this.cur_skill = null;
         this.is_die = false;
         this.attacked_num = 0;
-        if(this.is_me) {
+        if(this.character !== "robot") {
             this.img = new Image();
-            this.img.src = this.playground.root.settings.photo;
+            this.img.src = this.photo;
         }
     }
 
     start() {
-        if(this.is_me) {
+        if(this.character === "me") {
             this.add_listening_events();
         }
         else {
@@ -316,7 +333,7 @@ class Player extends AcGameObject {
     update_move() { //更新玩家移动
         this.spent_time += this.timedelta / 1000;
 
-        if(this.spent_time > 3 && Math.random() < 1 / 300.0 && !this.is_me) {
+        if(this.spent_time > 3 && Math.random() < 1 / 300.0 && this.character === "robot") {
             let player = this.playground.players[0];  
             this.shoot_fireball(player.x, player.y);
         }
@@ -330,7 +347,7 @@ class Player extends AcGameObject {
             if(this.move_length < this.eps) {
                 this.move_length = 0;
                 this.vx = this.vy = 0;
-                if(!this.is_me) { //如果AI，那么不能停下来，继续移动
+                if(this.character === "robot") { //如果AI，那么不能停下来，继续移动
                     let tx = Math.random() * this.playground.width / this.playground.scale;
                     let ty = Math.random() * this.playground.height / this.playground.scale;
                     this.move_to(tx, ty);
@@ -348,7 +365,7 @@ class Player extends AcGameObject {
     render() {
         let scale = this.playground.scale;
 
-        if(this.is_me) {
+        if(this.character !== "robot") {
             this.ctx.save();
             this.ctx.beginPath();
             this.ctx.arc(this.x * scale, this.y * scale, this.radius * scale, Math.PI * 2, false);
@@ -438,6 +455,33 @@ class FireBall extends AcGameObject {
         this.ctx.fill();
     }
 }
+class MultiPlayerSocket {
+    constructor(playground) {
+        this.playground = playground;
+        this.ws = new WebSocket("wss://app6916.acapp.acwing.com.cn/wss/multiplayer/");
+        this.start();
+    }
+
+
+    start() {
+
+    }
+
+    send_create_player(username, photo) {
+        let outer = this;
+        this.ws.send(JSON.stringify({
+            "event": "create_player",
+            "uuid": outer.uuid,
+            "username": username,
+            "photo": photo,
+        }));
+    }
+
+    receive_create_player() {
+        
+    }
+
+}
 class AcGamePlayground {
     constructor(root) {
         this.root = root;
@@ -472,7 +516,8 @@ class AcGamePlayground {
         if(this.game_map) this.game_map.resize();
     }
 
-    show() {
+    show(mode) {
+        let outer = this;
         //打开playground
         this.$playground.show();
         this.resize();
@@ -481,10 +526,21 @@ class AcGamePlayground {
         this.game_map = new GameMap(this);
         this.players = [];
         this.players.push(new Player(this, this.width / 2 / this.scale, this.height / 2 / this.scale, this.height * 0.05 / this.scale, "white", 
-            this.height * 0.15 / this.scale, true));
-        for(let i = 0; i < 5; i++) {
-            this.players.push(new Player(this, this.width / 2 / this.scale, this.height / 2 / this.scale, this.height * 0.05 / this.scale, 
-                this.get_random_color(), this.height * 0.15 / this.scale, false));
+            this.height * 0.15 / this.scale, "me", this.root.settings.usernsme, this.root.settings.photo));
+
+        if(mode === "single mode") {
+            for(let i = 0; i < 5; i++) {
+                this.players.push(new Player(this, this.width / 2 / this.scale, this.height / 2 / this.scale, this.height * 0.05 / this.scale, 
+                    this.get_random_color(), this.height * 0.15 / this.scale, "robot"));
+            }
+        } else if(mode === "multi mode") {
+            this.mps = new MultiPlayerSocket(this);
+            this.mps.uuid = this.players[0].uuid;
+            this.mps.ws.onopen = function() {
+                outer.mps.send_create_player(outer.root.settings.username, outer.root.settings.photo);
+
+                
+            };
         }
     }
 

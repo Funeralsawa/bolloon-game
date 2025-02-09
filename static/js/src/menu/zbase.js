@@ -38,11 +38,13 @@ class AcGameMenu {
         this.$single.click(function(){
             console.log('click single mode');
             outer.hide();
-            outer.root.playground.show();
+            outer.root.playground.show("single mode");
         });
 
         this.$multi.click(function(){
             console.log('click multi mode');
+            outer.hide();
+            outer.root.playground.show("multi mode");
         });
 
         this.$settings.click(function(){
