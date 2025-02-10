@@ -20,7 +20,7 @@ class MultiPlayer(AsyncWebsocketConsumer):
 
         for player in cache.get(self.room_name):
             await self.send(text_data=json.dumps({
-                "event": "creat_player",
+                "event": "create_player",
                 "uuid": player['uuid'],
                 'username': player['username'],
                 'photo': player['photo'],

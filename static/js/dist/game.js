@@ -206,6 +206,7 @@ class Particle extends AcGameObject {
 }
 class Player extends AcGameObject {
     constructor(playground, x, y, radius, color, speed, character, username, photo) {
+        console.log(character, username, photo);
         super();
         this.playground = playground;
         this.x = x;
@@ -239,7 +240,7 @@ class Player extends AcGameObject {
         if(this.character === "me") {
             this.add_listening_events();
         }
-        else {
+        else if(this.character === "robot") {
             let tx = Math.random() * this.playground.width / this.playground.scale;
             let ty = Math.random() * this.playground.height / this.playground.scale;
             this.move_to(tx, ty);
@@ -464,7 +465,20 @@ class MultiPlayerSocket {
 
 
     start() {
+        this.receive();
+    }
 
+    receive() {
+        let outer = this;
+        this.ws.onmessage = function(e) {
+            let data = JSON.parse(e.data);
+            let uuid = data.uuid;
+            if(uuid === outer.uuid) return false;
+            let event = data.event;
+            if(event === "create_player") {
+                outer.receive_create_player(uuid, data.username, data.photo);
+            }
+        }
     }
 
     send_create_player(username, photo) {
@@ -477,8 +491,21 @@ class MultiPlayerSocket {
         }));
     }
 
-    receive_create_player() {
-        
+    receive_create_player(uuid, username, photo) {
+        let player = new Player(
+            this.playground,
+            this.playground.width / 2 / this.playground.scale,
+            0.5,
+            0.05,
+            "white",
+            0.15,
+            "enemy",
+            username,
+            photo,
+        );
+
+        player.uuid = uuid;
+        this.playground.players.push(player);
     }
 
 }
