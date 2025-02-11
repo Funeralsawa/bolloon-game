@@ -25,10 +25,19 @@ class FireBall extends AcGameObject {
             this.destroy();
             return false;
         }
+        this.update_move();
+        if(this.player.character !== "enemy") this.update_attack();
+        this.render();
+    }
+
+    update_move() {
         let moved = Math.min(this.move_length, this.speed * this.timedelta / 1000);
         this.x += this.vx * moved;
         this.y += this.vy * moved;
         this.move_length -= moved;
+    }
+
+    update_attack() {
         for(let i = 0; i < this.playground.players.length; i++) {
             let player = this.playground.players[i];
             if(this.player !== player && this.is_collision(player)) {
@@ -36,7 +45,6 @@ class FireBall extends AcGameObject {
                 break;
             }
         }
-        this.render();
     }
 
     get_dist(x1, y1, x2, y2) {
@@ -52,6 +60,9 @@ class FireBall extends AcGameObject {
     attack(player) {
         let angle = Math.atan2(player.y - this.y, player.x - this.x);
         player.is_attacked(angle, this.damage);
+        if(this.playground.mode === "multi mode") {
+            this.playground.mps.send_attack(player.uuid, player.x, player.y, angle, this.damage, this.uuid);
+        }
         this.destroy();
     }
 
@@ -61,5 +72,15 @@ class FireBall extends AcGameObject {
         this.ctx.arc(this.x * scale, this.y * scale, this.radius * scale, 0, Math.PI * 2, false);
         this.ctx.fillStyle = this.color;
         this.ctx.fill();
+    }
+
+    on_destroy() {
+        let fireball = this.player.fireball;
+        for(let i = 0; i < this.player.fireballs.length; i++) {
+            if(this.player.fireballs[i] === this) {
+                this.player.fireballs.splice(i, 1);
+                break;
+            }
+        }
     }
 }

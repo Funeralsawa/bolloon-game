@@ -1,6 +1,5 @@
 class Player extends AcGameObject {
     constructor(playground, x, y, radius, color, speed, character, username, photo) {
-        console.log(character, username, photo);
         super();
         this.playground = playground;
         this.x = x;
@@ -21,6 +20,7 @@ class Player extends AcGameObject {
         this.eps = 0.01; //小于0.01就算0
         this.friction = 0.9;
         this.spent_time = 0;
+        this.fireballs = [];
         this.cur_skill = null;
         this.is_die = false;
         this.attacked_num = 0;
@@ -51,10 +51,20 @@ class Player extends AcGameObject {
             const rect = outer.ctx.canvas.getBoundingClientRect();
 
             if(e.which === 3) {
-                outer.move_to((e.clientX - rect.left) / outer.playground.scale, (e.clientY - rect.top) / outer.playground.scale);
+                let tx = (e.clientX - rect.left) / outer.playground.scale;
+                let ty = (e.clientY - rect.top) / outer.playground.scale;
+                outer.move_to(tx, ty);
+                if(outer.playground.mode === "multi mode") {
+                    outer.playground.mps.send_move_to(tx, ty);
+                }
             }else if(e.which === 1) {
+                let tx = (e.clientX - rect.left) / outer.playground.scale;
+                let ty = (e.clientY - rect.top) / outer.playground.scale;
                 if(!outer.is_die && outer.cur_skill === "fireball") {
-                    outer.shoot_fireball((e.clientX - rect.left) / outer.playground.scale, (e.clientY - rect.top) / outer.playground.scale);
+                    let fireball = outer.shoot_fireball(tx, ty);
+                    if(outer.playground.mode === "multi mode") {
+                        outer.playground.mps.send_shoot_fireball(tx, ty, fireball.uuid);
+                    }
                 }
                 outer.cur_skill = null;
             }
@@ -83,7 +93,19 @@ class Player extends AcGameObject {
         let color = "red";
         let speed = this.playground.height * 0.5 / this.playground.scale;
         let move_length = this.playground.height * 1 / this.playground.scale;
-        new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, this.playground.height * 0.01 / this.playground.scale);
+        let fireball = new FireBall(this.playground, this, x, y, radius, vx, vy, color, speed, move_length, this.playground.height * 0.01 / this.playground.scale);
+        this.fireballs.push(fireball);
+        return fireball;
+    }
+
+    destroy_fireball(uuid) {
+        for(let i = 0; i < this.fireballs.length; i++) {
+            let fireball = this.fireballs[i];
+            if(fireball.uuid === uuid) {
+                fireball.destroy();
+                break;
+            }
+        }
     }
 
     move_to(tx, ty) {
@@ -120,6 +142,13 @@ class Player extends AcGameObject {
         this.speed *= 1.5;
     }
 
+    receive_attack(x, y, angle, damage, ball_uuid, attacker) {
+        attacker.destroy_fireball(ball_uuid);
+        this.x = x;
+        this.y = y;
+        this.is_attacked(angle, damage);
+    }
+
     update() {
         this.update_move();
         this.render();
@@ -152,7 +181,6 @@ class Player extends AcGameObject {
                 this.x += this.vx * this.moved;
                 this.y += this.vy * this.moved;
                 this.move_length -= this.moved;
-                //console.log(this.x, this.y);
             }
         }
     }

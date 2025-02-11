@@ -44,7 +44,7 @@ class MultiPlayer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.room_name,
             {
-                'type': "group_create_player", #将消息发给组内所有人，这是接收函数名
+                'type': "group_send_event", #将消息发给组内所有人，这是接收函数名
                 'event': "create_player",
                 'uuid': data['uuid'],
                 'username': data['username'],
@@ -52,12 +52,59 @@ class MultiPlayer(AsyncWebsocketConsumer):
             }
         )
 
-    async def group_create_player(self, data):
+    async def group_send_event(self, data):
         await self.send(text_data=json.dumps(data))
+
+    async def move_to(self, data):
+        await self.channel_layer.group_send(
+            self.room_name,
+            {
+                'type': "group_send_event",
+                'event': "move_to",
+                'uuid': data['uuid'],
+                'tx': data['tx'],
+                'ty': data['ty'],
+            }
+        );
+
+    async def shoot_fireball(self, data):
+        await self.channel_layer.group_send(
+            self.room_name,
+            {
+                'type': "group_send_event",
+                'event': "shoot_fireball",
+                'uuid': data['uuid'],
+                'tx': data['tx'],
+                'ty': data['ty'],
+                'ball_uuid': data['ball_uuid'],
+            }
+        )
+
+    async def attack(self, data):
+        await self.channel_layer.group_send(
+            self.room_name,
+            {
+                'type': "group_send_event",
+                'event': "attack",
+                'uuid': data['uuid'],
+                'attackee_uuid': data['attackee_uuid'],
+                'x': data['x'],
+                'y': data['y'],
+                'angle': data['angle'],
+                'damage': data['damage'],
+                'ball_uuid': data['ball_uuid'],
+            }
+        )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
         event = data['event']
         if event == 'create_player':
             await self.create_player(data)
+        elif event == 'move_to':
+            await self.move_to(data)
+        elif event == 'shoot_fireball':
+            await self.shoot_fireball(data)
+        elif event == 'attack':
+            await self.attack(data)
 

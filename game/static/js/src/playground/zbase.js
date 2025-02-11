@@ -36,10 +36,11 @@ class AcGamePlayground {
         let outer = this;
         //打开playground
         this.$playground.show();
-        this.resize();
         this.width = this.$playground.width();
         this.height = this.$playground.height();
         this.game_map = new GameMap(this);
+        this.resize();
+        this.mode = mode;
         this.players = [];
         this.players.push(new Player(this, this.width / 2 / this.scale, this.height / 2 / this.scale, this.height * 0.05 / this.scale, "white", 
             this.height * 0.15 / this.scale, "me", this.root.settings.usernsme, this.root.settings.photo));
@@ -55,7 +56,6 @@ class AcGamePlayground {
             this.mps.ws.onopen = function() {
                 outer.mps.send_create_player(outer.root.settings.username, outer.root.settings.photo);
 
-                
             };
         }
     }
