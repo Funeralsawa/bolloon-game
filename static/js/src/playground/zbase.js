@@ -41,6 +41,9 @@ class AcGamePlayground {
         this.game_map = new GameMap(this);
         this.resize();
         this.mode = mode;
+        this.state = "waiting"; //waiting -> fighting -> over
+        this.notice_board = new NoticeBoard(this);
+        this.player_count = 0; //玩家人数
         this.players = [];
         this.players.push(new Player(this, this.width / 2 / this.scale, this.height / 2 / this.scale, this.height * 0.05 / this.scale, "white", 
             this.height * 0.15 / this.scale, "me", this.root.settings.usernsme, this.root.settings.photo));
